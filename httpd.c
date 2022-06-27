@@ -462,6 +462,7 @@ int main(void) {
 
   server_sock = startup(&port);
   printf("httpd running on port %d\n", port);
+  printf("access the server at http://localhost:%d/\n", port);
 
   while (1) {
     client_sock =
