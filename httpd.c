@@ -30,7 +30,7 @@
 
 #define SERVER_STRING "Server: jdbhttpd/0.1.0\r\n"
 
-void accept_request(int);
+void *accept_request(void *); // <- void accept_request(int);
 void bad_request(int);
 void cat(int, FILE *);
 void cannot_execute(int);
@@ -48,7 +48,7 @@ void unimplemented(int);
  * return.  Process the request appropriately.
  * Parameters: the socket connected to the client */
 /**********************************************************************/
-void accept_request(int client) {
+void *accept_request(void *tclient) { // <- void accept_request(int client)
   char buf[1024];
   int numchars;
   char method[255];
@@ -138,6 +138,8 @@ void bad_request(int client) {
   send(client, buf, sizeof(buf), 0);
   sprintf(buf, "such as a POST without a Content-Length.\r\n");
   send(client, buf, sizeof(buf), 0);
+
+  return NULL;
 }
 
 /**********************************************************************/
@@ -466,7 +468,9 @@ int main(void) {
     if (client_sock == -1)
       error_die("accept");
     /* accept_request(client_sock); */
-    if (pthread_create(&newthread, NULL, accept_request, client_sock) != 0)
+    // if (pthread_create(&newthread, NULL, accept_request, client_sock) != 0)
+    if (pthread_create(&newthread, NULL, accept_request,
+                       (void *)&client_sock) != 0)
       perror("pthread_create");
   }
 
