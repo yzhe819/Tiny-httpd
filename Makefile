@@ -13,3 +13,11 @@ clean:
 run:
 	@echo "running..."
 	./httpd
+
+install:
+	@echo "perl-cgi installing..."
+	@echo "install CGI.pm"
+	perl -MCPAN -e shell
+
+check:
+	# perl -MCGI -e 'print "CGI.pm version $CGI::VERSION\n";'
