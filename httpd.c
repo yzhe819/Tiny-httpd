@@ -1,8 +1,9 @@
-/* J. David's webserver */
+/* Tiny Httpd */
 /* This is a simple webserver.
  * Created November 1999 by J. David Blackstone.
  * CSE 4344 (Network concepts), Prof. Zeigler
  * University of Texas at Arlington
+ * Modified by yzhe819, June 2022
  */
 /* This program compiles for Sparc Solaris 2.6.
  * To compile for Linux:
@@ -11,6 +12,15 @@
  *  3) Comment out the two lines that run pthread_create().
  *  4) Uncomment the line that runs accept_request().
  *  5) Remove -lsocket from the Makefile.
+ */
+/* This program has been modified by yzhe819 for the ubuntu environment.
+ * The modification is as follows:
+ * 1) Update the accept_request method for supporting the pthread library.
+ * 2) Update the type of server and client name, from int to socklen_t.
+ * 3) Fix the bug of the execl on line 262.
+ * 4) Update the perl path for the ubuntu environment.
+ * For the change in c, the source code can be found from the related comment.
+ * Happy coding! (ฅ´ω`ฅ)
  */
 #include <stdio.h>
 #include <sys/socket.h>
