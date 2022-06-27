@@ -59,6 +59,7 @@ void *accept_request(void *tclient) { // <- void accept_request(int client)
   int cgi = 0; /* becomes true if server decides this is a CGI
                 * program */
   char *query_string = NULL;
+  int client = *(int *)tclient;
 
   numchars = get_line(client, buf, sizeof(buf));
   i = 0;
@@ -72,7 +73,7 @@ void *accept_request(void *tclient) { // <- void accept_request(int client)
 
   if (strcasecmp(method, "GET") && strcasecmp(method, "POST")) {
     unimplemented(client);
-    return;
+    return NULL;
   }
 
   if (strcasecmp(method, "POST") == 0)
@@ -119,6 +120,7 @@ void *accept_request(void *tclient) { // <- void accept_request(int client)
   }
 
   close(client);
+  return NULL;
 }
 
 /**********************************************************************/
@@ -138,8 +140,6 @@ void bad_request(int client) {
   send(client, buf, sizeof(buf), 0);
   sprintf(buf, "such as a POST without a Content-Length.\r\n");
   send(client, buf, sizeof(buf), 0);
-
-  return NULL;
 }
 
 /**********************************************************************/
