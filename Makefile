@@ -1,8 +1,15 @@
 all: httpd
 
-httpd: httpd.c
-	# gcc -W -Wall -lsocket -lpthread -o httpd httpd.c
-	gcc -g -W -Wall  httpd.c -o httpd -lpthread
+httpd: clean
+	@echo "compiling..."
+	gcc -W -Wall httpd.c -o httpd -lpthread
+	@echo "compiled"
 
 clean:
-	rm httpd
+	@echo "cleaning..."
+	@if [ -e  httpd ]; then rm httpd; fi
+	@echo "cleaned"
+
+run:
+	@echo "running..."
+	./httpd
