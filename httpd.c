@@ -139,7 +139,7 @@ void *accept_request(void *tclient) { // <- void accept_request(int client)
 /**********************************************************************/
 void bad_request(int client) {
   char buf[1024];
-
+  // store the error message in buf, then send it to the client
   sprintf(buf, "HTTP/1.0 400 BAD REQUEST\r\n");
   send(client, buf, sizeof(buf), 0);
   sprintf(buf, "Content-type: text/html\r\n");
@@ -161,10 +161,14 @@ void bad_request(int client) {
 /**********************************************************************/
 void cat(int client, FILE *resource) {
   char buf[1024];
-
+  // read the file from the resource pointer, and store it in buf
   fgets(buf, sizeof(buf), resource);
-  while (!feof(resource)) {
+  // handle the remaining lines of the file
+  while (
+      !feof(resource)) { // when the file is finished, feof(resource) returns 0
+    // send the buf data to the client
     send(client, buf, strlen(buf), 0);
+    // it will at most read sizeof(buf) - 1 bytes
     fgets(buf, sizeof(buf), resource);
   }
 }
@@ -175,7 +179,7 @@ void cat(int client, FILE *resource) {
 /**********************************************************************/
 void cannot_execute(int client) {
   char buf[1024];
-
+  // cannot execute the CGI script
   sprintf(buf, "HTTP/1.0 500 Internal Server Error\r\n");
   send(client, buf, strlen(buf), 0);
   sprintf(buf, "Content-type: text/html\r\n");
@@ -192,6 +196,7 @@ void cannot_execute(int client) {
  * program indicating an error. */
 /**********************************************************************/
 void error_die(const char *sc) {
+  // print the error message and exit the program
   perror(sc);
   exit(1);
 }
@@ -306,26 +311,30 @@ int get_line(int sock, char *buf, int size) {
   char c = '\0';
   int n;
 
+  // at most read size-1 bytes, leave the last char for null char '\n'
   while ((i < size - 1) && (c != '\n')) {
     n = recv(sock, &c, 1, 0);
     /* DEBUG printf("%02X\n", c); */
     if (n > 0) {
+      // if c is '\r', read the next char
       if (c == '\r') {
+        // set MSG_PEEK to keep the received window
         n = recv(sock, &c, 1, MSG_PEEK);
         /* DEBUG printf("%02X\n", c); */
-        if ((n > 0) && (c == '\n'))
+        if ((n > 0) && (c == '\n')) // get the '\n', which means '\r\n'
           recv(sock, &c, 1, 0);
-        else
+        else // '\r' is not followed by '\n'
           c = '\n';
       }
-      buf[i] = c;
+      buf[i] = c; // store the char in the buffer
       i++;
-    } else
+    } else { // if not recieved any char, set c to '\n'
       c = '\n';
+    }
   }
   buf[i] = '\0';
 
-  return (i);
+  return (i); // return the number of bytes stored
 }
 
 /**********************************************************************/
@@ -334,6 +343,7 @@ int get_line(int sock, char *buf, int size) {
  *             the name of the file */
 /**********************************************************************/
 void headers(int client, const char *filename) {
+  // just send the file info header to the client
   char buf[1024];
   (void)filename; /* could use filename to determine file type */
 
@@ -352,7 +362,7 @@ void headers(int client, const char *filename) {
 /**********************************************************************/
 void not_found(int client) {
   char buf[1024];
-
+  // Just the 404 message, which can be updated to the 404 page later
   sprintf(buf, "HTTP/1.0 404 NOT FOUND\r\n");
   send(client, buf, strlen(buf), 0);
   sprintf(buf, SERVER_STRING);
@@ -376,6 +386,7 @@ void not_found(int client) {
 /**********************************************************************/
 /* Send a regular file to the client.  Use headers, and report
  * errors to client if they occur.
+ * All the logic about the file data will be handled in this method.
  * Parameters: a pointer to a file structure produced from the socket
  *              file descriptor
  *             the name of the file to serve */
@@ -390,13 +401,18 @@ void serve_file(int client, const char *filename) {
   while ((numchars > 0) && strcmp("\n", buf)) /* read & discard headers */
     numchars = get_line(client, buf, sizeof(buf));
 
+  // open the file for reading
   resource = fopen(filename, "r");
   if (resource == NULL)
+    // if the file is not found, send a 404 message
     not_found(client);
   else {
+    // send the header to the client first
     headers(client, filename);
+    // then send the file data by using resource pointer
     cat(client, resource);
   }
+  // close the file
   fclose(resource);
 }
 
@@ -412,13 +428,18 @@ int startup(u_short *port) {
   int httpd = 0;
   struct sockaddr_in name;
 
+  // create a socket for server side
   httpd = socket(PF_INET, SOCK_STREAM, 0);
   if (httpd == -1)
     error_die("socket");
   memset(&name, 0, sizeof(name));
+  // this sin family must be AF_INET
+  // related link:
+  // https://stackoverflow.com/questions/57779761/why-does-the-sin-family-member-exist
   name.sin_family = AF_INET;
   name.sin_port = htons(*port);
   name.sin_addr.s_addr = htonl(INADDR_ANY);
+  // bind the socket to the port
   if (bind(httpd, (struct sockaddr *)&name, sizeof(name)) < 0)
     error_die("bind");
   if (*port == 0) /* if dynamically allocating a port */
@@ -428,6 +449,7 @@ int startup(u_short *port) {
       error_die("getsockname");
     *port = ntohs(name.sin_port);
   }
+  // start the server listening
   if (listen(httpd, 5) < 0)
     error_die("listen");
   return (httpd);
@@ -470,10 +492,12 @@ int main(void) {
       sizeof(client_name); // <- int client_name_len = sizeof(client_name);
   pthread_t newthread;
 
+  // use startup to get a socket and bind it to a port
   server_sock = startup(&port);
   printf("httpd running on port %d\n", port);
   printf("access the server at http://localhost:%d/\n", port);
 
+  // loop forever for incoming connections
   while (1) {
     client_sock =
         accept(server_sock, (struct sockaddr *)&client_name, &client_name_len);
@@ -481,6 +505,7 @@ int main(void) {
       error_die("accept");
     /* accept_request(client_sock); */
     // if (pthread_create(&newthread, NULL, accept_request, client_sock) != 0)
+    // once accept a client, create a new thread to handle it
     if (pthread_create(&newthread, NULL, accept_request,
                        (void *)&client_sock) != 0)
       perror("pthread_create");
