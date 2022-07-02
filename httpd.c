@@ -71,9 +71,11 @@ void *accept_request(void *tclient) { // <- void accept_request(int client)
   char *query_string = NULL;
   int client = *(int *)tclient;
 
+  // record the sized data to buf and return the number of characters
   numchars = get_line(client, buf, sizeof(buf));
   i = 0;
   j = 0;
+  // get at most 254 characters before the space
   while (!ISspace(buf[j]) && (i < sizeof(method) - 1)) {
     method[i] = buf[j];
     i++;
@@ -81,54 +83,73 @@ void *accept_request(void *tclient) { // <- void accept_request(int client)
   }
   method[i] = '\0';
 
+  // check the request method, GET or POST or other
   if (strcasecmp(method, "GET") && strcasecmp(method, "POST")) {
+    // if the request method is not GET or POST, then it is not supported
     unimplemented(client);
     return NULL;
   }
 
+  // if the request method is POST, then set the cgi flag to 1
   if (strcasecmp(method, "POST") == 0)
     cgi = 1;
 
   i = 0;
+  // skip spaces to get the url
   while (ISspace(buf[j]) && (j < sizeof(buf)))
     j++;
+
+  // store all the non-space characters from buf to the url
   while (!ISspace(buf[j]) && (i < sizeof(url) - 1) && (j < sizeof(buf))) {
-    url[i] = buf[j];
+    url[i] = buf[j]; // which is the url data
     i++;
     j++;
   }
   url[i] = '\0';
 
+  // if the request method is GET
   if (strcasecmp(method, "GET") == 0) {
     query_string = url;
     while ((*query_string != '?') && (*query_string != '\0'))
       query_string++;
+    // the url contains a query string, which has '?' in it
     if (*query_string == '?') {
+      // set the cgi flag to 1
       cgi = 1;
       *query_string = '\0';
       query_string++;
     }
   }
 
-  sprintf(path, "htdocs%s", url);
+  // check if the url is a directory, which is the file under the htdocs
+  // directory
+
+  sprintf(path, "htdocs%s", url); // get the file path
+
+  // if the url is a directory, add index.html
   if (path[strlen(path) - 1] == '/')
     strcat(path, "index.html");
+
+  // if the file is not found, then return the not found message
   if (stat(path, &st) == -1) {
     while ((numchars > 0) && strcmp("\n", buf)) /* read & discard headers */
       numchars = get_line(client, buf, sizeof(buf));
     not_found(client);
   } else {
+    // if the file is found, then check if it is a directory
     if ((st.st_mode & S_IFMT) == S_IFDIR)
+      // the default file is index.html
       strcat(path, "/index.html");
     if ((st.st_mode & S_IXUSR) || (st.st_mode & S_IXGRP) ||
         (st.st_mode & S_IXOTH))
       cgi = 1;
-    if (!cgi)
+    if (!cgi) // just the static file
       serve_file(client, path);
-    else
+    else // need to run the cgi script
       execute_cgi(client, path, method, query_string);
   }
 
+  // close the client socket
   close(client);
   return NULL;
 }
