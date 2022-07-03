@@ -1,3 +1,8 @@
+[![buddy pipeline](https://app.buddy.works/yzhe819/tiny-httpd/pipelines/pipeline/399792/badge.svg?token=d3855c23579a167933ff3cffb87b6ab3454dbae11e9548b2daa81df2bb644b09 "buddy pipeline")](https://app.buddy.works/yzhe819/tiny-httpd/pipelines/pipeline/399792)
+
+
+
+```
   This software is copyright 1999 by J. David Blackstone.  Permission
 is granted to redistribute and modify this software under the terms of
 the GNU General Public License, available at http://www.gnu.org/ .
@@ -38,3 +43,4 @@ I help you learn something, I'd love to know!
   Happy hacking!
 
                                    J. David Blackstone
+```
