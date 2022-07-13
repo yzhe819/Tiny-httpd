@@ -1,3 +1,0 @@
-[submodule "utils/tinyhttpd"]
-	path = utils/tinyhttpd
-	url = https://github.com/cbsheng/tinyhttpd.git
